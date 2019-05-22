@@ -1,0 +1,187 @@
+import Rules.*;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.*;
+import java.util.*;
+
+public class Seminar1 {
+    private final static int h_CHECKMATE = 100000;
+    private final static int const_a = 10;
+    private static int foundFasterMate;
+
+    public static int evalh(Chessboard board) {
+        int h=0;
+        int boardStatus = board.getGameStatus();
+        if (boardStatus == board.CHECKMATE) { //checkmate
+            if (board.getMovesLeft() > 0) {   //wrong time for mate
+                h = -1;
+                foundFasterMate = 1;
+                //TODO: re-evaluate all after this
+            } else h = h_CHECKMATE; //right time, found solution
+        }
+        else if (board.getMovesLeft() == 0) h = -1;  //out of moves, discard
+        else if (boardStatus == board.CHECK) h = -1;//invalid move discard
+        else if (boardStatus == board.DRAW) h = -1;//invalid move discard
+        else {
+            h = const_a / board.getMovesLeft(); //higher priority for moves further in
+            //TODO: evaluate move based on piece / distance to king
+            //TODO: evaluate move based on fields near king, make board statistic
+        }
+
+        return h;
+    }
+
+    private static class Sequence implements Comparator<Sequence> {
+
+        public ArrayList<Move> seq;
+        public int h;
+
+        Sequence(){
+            seq = new ArrayList<Move>();
+            h=0;
+        }
+
+        Sequence(Move move, Chessboard board, int h_in){
+            seq = new ArrayList<Move>();
+            seq.add(move);
+            h=h_in;
+        }
+
+        Sequence(@NotNull Sequence sequence, Move move, Chessboard board, int h_in){
+            seq = new ArrayList<Move>(sequence.seq);
+            seq.add(move);
+            h=h_in;
+        }
+
+        public int len(){
+            return seq.size();
+        }
+
+        public int compare(Sequence s1, Sequence s2){
+            return s2.h - s1.h;
+        }
+
+        public void execSeq(Chessboard board){
+            seq.forEach((move) -> board.makeMove(move));
+        }
+
+        public void revSeq(Chessboard board){
+            for(int i=len()-1;i>=0;--i){
+                board.reverseMove(seq.get(i));
+            }
+        }
+    }
+
+    @Nullable private static ArrayList<Move> Astar(Chessboard board){
+        long stime = System.nanoTime();
+        foundFasterMate = 0;
+        ArrayList<Move> possibleMoves;
+        Sequence ns;  //new sequence (temporary)
+        int h=0;//temp eval variable
+        String moveStr=" ";
+
+        //initialize
+        PriorityQueue<Sequence> queue = new PriorityQueue<>(100, new Sequence());
+        queue.add(new Sequence());
+
+
+        int count = 0;
+
+        long measure=0;
+        long measure2=0;
+        long measure3=0;
+        long measureTemp;
+        long measureTemp2;
+
+
+        while((System.nanoTime()-stime)/1000000 < 19800){
+            measureTemp=System.nanoTime();
+            Sequence cs = queue.poll(); //current sequence
+            cs.execSeq(board);
+            possibleMoves = board.getMoves();
+            measure+=System.nanoTime()-measureTemp;
+            measureTemp=System.nanoTime();
+            for(Move move:possibleMoves) {
+                count++;
+                if(board.getMovesLeft()==1){
+                    measureTemp2 = System.nanoTime();
+                    move.setAlgebraicNotaion(true);
+                    moveStr=move.toString();
+                    if(moveStr.charAt(moveStr.length()-1)=='#'){
+                        System.out.print(count + " ");
+                        System.out.print(measure/1000000+ " ");
+                        System.out.print(measure2/1000000 + " ");
+                        System.out.print(measure3/1000000 + " ");
+                        return (new Sequence(cs, move, board, h)).seq;
+                    }
+                    measure3 += System.nanoTime() - measureTemp2;
+                }
+                else {
+                    board.makeMove(move);
+
+                    measureTemp2 = System.nanoTime();
+
+                    h = evalh(board);
+                    if (h >= h_CHECKMATE) {//solution found
+                        System.out.print(count + " ");
+                        System.out.print(measure/1000000+ " ");
+                        System.out.print(measure2/1000000 + " ");
+                        System.out.print(measure3/1000000 + " ");
+                        return (new Sequence(cs, move, board, h)).seq;
+                    } else if (h >= 0) { //h<0 wrong moves (check)
+                        ns = new Sequence(cs, move, board, h);
+                        queue.add(ns);
+                    }
+                    measure3 += System.nanoTime() - measureTemp2;
+
+                    board.reverseMove();
+                }
+            }
+            measure2+=System.nanoTime()-measureTemp;
+            measureTemp=System.nanoTime();
+            cs.revSeq(board);
+            measure+=System.nanoTime()-measureTemp;
+        }
+        System.out.print(count + " ");
+        System.out.print(measure/1000000+ " ");
+        System.out.print(measure2/1000000 + " ");
+        System.out.print(measure3/1000000 + " ");
+        return null;
+    }
+
+
+    public static void main (String args[]) throws IOException {
+        Scanner sc = new Scanner(System.in);
+        String fenIn = " ";
+        //fenIn = sc.nextLine();
+
+        for (int i = 1; i <= 60; ++i) {
+            long stime = System.nanoTime();
+
+            //read
+            System.out.print(i+" ");
+            String fileName = "in/" + i + ".txt";
+            File file = new File(fileName);
+            FileReader fr = new FileReader(file);
+            BufferedReader br = new BufferedReader(fr);
+            fenIn = br.readLine();
+
+            //solve
+            Chessboard board = Chessboard.getChessboardFromFEN(fenIn);
+            ArrayList<Move> result = Astar(board);
+
+            //print
+            long etime = System.nanoTime();
+            System.out.print(" " + (etime - stime) / 1000000 + " ");
+            if (result != null) {
+                System.out.print(" S: ");
+                for (Move move : result) {
+                    move.setAlgebraicNotaion(false);
+                    System.out.print(move.toString() + ";");
+                }
+            }
+            System.out.println(" ");
+        }
+    }
+}

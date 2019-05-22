@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="ProgChess:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/ProgChess_jar</output-path>
+    <root id="archive" name="ProgChess.jar">
+      <element id="module-output" name="ProgChess" />
+      <element id="library" level="project" name="ProgressiveChess" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/ProgressiveChess.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/jetbrains/annotations/16.0.2/annotations-16.0.2.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="ProgressiveChess">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/src/lib/ProgressiveChess.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
